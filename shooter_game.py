@@ -1,5 +1,6 @@
 import pygame
 from pygame import *
+from random import randint
 
 # Initialize Pygame
 pygame.init()
@@ -34,12 +35,35 @@ class Player(GameSprite):
         if keys[K_DOWN] and self.rect.y < 500 - 65:  # Adjusting for sprite height
             self.rect.y += self.speed
 
-# Enemy class (currently empty)
+    def shoot(self):
+        bullet = Ammo("bullet.png", self.rect.centerx, self.rect.top, 15)
+        bullets.add(bullet)
+
+
+
+# Enemy class with falling down logic
 class Enemy(GameSprite):
     def update(self):
-        pass  # Add enemy movement logic here
+        # Move the enemy down the screen by its speed
+        self.rect.y += self.speed
+        
+        # If the enemy goes off the bottom of the screen, reset it to the top
+        if self.rect.y > 500:  # Screen height is 500
+            self.rect.y = -65  # Reset it just above the screen
+            self.rect.x = randint(0, 700 - 65)  # Randomize the horizontal position
 
-# Game setup
+
+class Ammo(GameSprite):
+    def update(self):
+        self.rect.y -= self.speed
+        
+        # If the enemy goes off the bottom of the screen, reset it to the top
+        if self.rect.y < 0:  # Screen height is 500
+            self.kill()
+
+        
+
+        
 game = True
 clock = time.Clock()
 FPS = 60
@@ -47,11 +71,10 @@ FPS = 60
 # Create player and enemy instances
 player = Player("rocket.png", 100, 100, 5)  # Replace with your image path
 enemy = Enemy("asteroid.png", 300, 100, 5)  # Replace with your image path
-
 # Create sprite groups
 monsters = sprite.Group()
 monsters.add(enemy)
-
+bullets = sprite.Group()
 # Load and play music
 mixer.init()
 mixer.music.load("space.ogg")
@@ -61,21 +84,37 @@ while game:
     for e in event.get():
         if e.type == QUIT:
             game = False
+        elif e.type == KEYDOWN:
+            if e.key == K_SPACE:
+                player.shoot()
 
     # Update
     player.update()
     monsters.update()
+    bullets.update()
 
+    if sprite.groupcollide(monsters, bullets, True, True):
+        # Create a new enemy at a random position when one is hit
+        new_enemy = Enemy("asteroid.png", randint(0, 700 - 65), -65, 5)
+        monsters.add(new_enemy)
+
+    if sprite.spritecollideany(player, monsters):
+        # Create a new enemy at a random position when one is hit
+        print("Game over , NOOOOBB !!!")
+        game = False
+
+    
     # Draw everything
     screen.blit(background, (0, 0))
     player.reset()
     monsters.draw(screen)
+    bullets.draw(screen)  
 
     # Update display
-    print('test')
     display.update()
     clock.tick(FPS)
 
 # Quit Pygame
 pygame.quit()
+
 
